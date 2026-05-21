@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>阿瓦隆圆桌</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- Ambient background -->
+  <div class="bg-layer bg-a" aria-hidden="true"></div>
+  <div class="bg-layer bg-b" aria-hidden="true"></div>
+
+  <main class="app-shell">
+
+    <!-- ─── JOIN VIEW ──────────────────────────────────────────── -->
+    <section id="joinView" class="join-view hidden">
+      <div class="join-inner">
+        <header class="join-header">
+          <div class="join-crest" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 4L28.5 18H44L31.5 27L36 41L24 32L12 41L16.5 27L4 18H19.5L24 4Z" fill="currentColor" opacity="0.9"/>
+            </svg>
+          </div>
+          <p class="join-overline">AVALON · ROUND TABLE</p>
+          <h1 class="join-title">阿瓦隆圆桌</h1>
+          <p class="join-desc">多人联机 · 私密身份 · 实时语音</p>
+        </header>
+
+        <div class="join-form">
+          <div class="field-group">
+            <label class="field-label" for="roomInput">房间号</label>
+            <input id="roomInput" class="field-input" placeholder="如 AVALON 或 6位代码" maxlength="24" autocomplete="off" inputmode="text" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="nameInput">你的昵称</label>
+            <input id="nameInput" class="field-input" placeholder="如 梅林" maxlength="24" autocomplete="off" />
+          </div>
+          <button id="joinBtn" class="btn btn-enter">进入圆桌</button>
+          <p class="join-note">第一个进入的人自动成为房主。游戏开始后新玩家无法加入。</p>
+        </div>
+
+        <!-- Continue last room -->
+        <div id="lastRoomCard" class="last-room-card hidden">
+          <div>
+            <div class="last-room-card-label">继续上次房间</div>
+            <div id="lastRoomName" class="last-room-card-name">-</div>
+          </div>
+          <div id="lastRoomTime" class="last-room-card-time"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── GAME VIEW ───────────────────────────────────────────── -->
+    <section id="gameView" class="game-view hidden">
+
+      <!-- Top bar -->
+      <header class="game-topbar">
+        <div class="topbar-left">
+          <button id="backBtn" class="back-btn" aria-label="返回大厅">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+              <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+          <div class="room-info">
+            <div class="room-title-row">
+              <span class="room-label">#</span>
+              <span id="roomCode" class="room-code">-</span>
+              <span id="phaseTitle" class="phase-chip">大厅</span>
+            </div>
+            <div id="scoreText" class="score-display">
+              <span class="good-score">正义 0</span> : <span class="evil-score">邪恶 0</span>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-controls">
+          <button id="voiceBtn" class="ctrl-btn" title="语音">
+            <span class="ctrl-icon">🎙</span>
+            <span class="ctrl-label">语音</span>
+          </button>
+          <button id="listenBtn" class="ctrl-btn" title="扬声器">
+            <span class="ctrl-icon">🔊</span>
+            <span class="ctrl-label">扬声器</span>
+          </button>
+          <button id="copyRoomBtn" class="ctrl-btn" title="复制邀请链接">
+            <span class="ctrl-icon">🔗</span>
+            <span class="ctrl-label">邀请</span>
+          </button>
+          <button id="resetBtn" class="ctrl-btn ctrl-danger hidden" title="重置房间">
+            <span class="ctrl-icon">↺</span>
+            <span class="ctrl-label">重置</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Board: left seats | center | right seats -->
+      <div class="board-layout">
+
+        <div class="seat-column seat-col-odd" id="oddPlayersList"></div>
+
+        <div class="center-col">
+
+          <!-- Judge announcement -->
+          <section class="panel judge-panel">
+            <div class="panel-head">
+              <span class="panel-icon">🏰</span>
+              <h3 class="panel-title">法官公告</h3>
+              <button id="infoMiniBtn" class="link-btn">信息 ›</button>
+            </div>
+            <p id="announcementText" class="judge-text">等待圆桌开启。</p>
+            <div id="errorBox" class="error-box hidden"></div>
+          </section>
+
+          <!-- Action panel -->
+          <section id="actionPanel" class="panel action-panel">
+            <div class="panel-head">
+              <span class="panel-icon">⚔️</span>
+              <h3 class="panel-title">当前操作</h3>
+              <span id="permissionText" class="status-chip">等待</span>
+            </div>
+            <div id="actionArea" class="action-area"></div>
+          </section>
+
+          <!-- Chat -->
+          <section class="panel chat-panel">
+            <div class="panel-head">
+              <span class="panel-icon">💬</span>
+              <h3 class="panel-title">文字公屏</h3>
+              <span id="chatStatusText" class="status-chip">可打字</span>
+            </div>
+            <div id="chatMessages" class="chat-list"></div>
+            <div class="chat-input-row">
+              <input id="chatInput" class="chat-field" placeholder="输入消息…" />
+              <button id="sendChatBtn" class="send-btn" aria-label="发送">
+                <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                  <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+                </svg>
+              </button>
+            </div>
+          </section>
+
+        </div>
+
+        <div class="seat-column seat-col-even" id="evenPlayersList"></div>
+
+      </div>
+
+      <!-- Identity hint -->
+      <p id="identityHint" class="identity-hint">ⓘ 游戏开始后可点击自己的席位查看身份牌</p>
+
+      <!-- Bottom nav -->
+      <nav class="bottom-nav">
+        <button id="openTagsBtn" class="nav-btn">
+          <span class="nav-icon">⚑</span>
+          <span class="nav-label">标记</span>
+        </button>
+        <button id="openInfoBtn" class="nav-btn">
+          <span class="nav-icon">▥</span>
+          <span class="nav-label">信息</span>
+        </button>
+        <button id="openHistoryBtn" class="nav-btn">
+          <span class="nav-icon">↺</span>
+          <span class="nav-label">历史</span>
+        </button>
+      </nav>
+
+      <!-- Hidden utility -->
+      <span id="playerCountText" class="hidden">0/10</span>
+      <div id="playersList" class="hidden"></div>
+      <span id="chatOpenText" class="hidden"></span>
+
+    </section>
+  </main>
+
+  <!-- Phase toast -->
+  <div id="phaseToast" class="phase-toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- ─── DEAL OVERLAY ─────────────────────────────────────── -->
+  <section id="dealOverlay" class="deal-overlay hidden" aria-modal="true" role="dialog" aria-label="身份牌">
+    <div class="deal-stage">
+      <div class="deal-title">夜幕降临，命运已被分配</div>
+      <div id="flyingCards" class="flying-cards" aria-hidden="true"></div>
+
+      <button id="dealCard" class="identity-flip-card" type="button" aria-label="翻开身份牌">
+        <div id="dealCardInner" class="deal-flip-inner">
+          <!-- Card Front (back face) -->
+          <div class="deal-face deal-face-front">
+            <span class="deal-crest-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="52" height="52">
+                <path d="M24 4L28.5 18H44L31.5 27L36 41L24 32L12 41L16.5 27L4 18H19.5L24 4Z" fill="currentColor" opacity="0.85"/>
+              </svg>
+            </span>
+            <strong class="deal-face-title">身份牌</strong>
+            <span class="deal-face-hint">点击翻开</span>
+          </div>
+          <!-- Card Back (identity face) -->
+          <div id="dealCardBack" class="deal-face deal-face-back">
+            <strong>等待身份信息</strong>
+          </div>
+        </div>
+      </button>
+
+      <div class="deal-actions deal-actions-single">
+        <button id="dealConfirmRoleBtn" class="btn-confirm" type="button" disabled>我已确认</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── MODALS ─────────────────────────────────────────── -->
+  <div id="modalBackdrop" class="modal-backdrop hidden"></div>
+
+  <section id="roleModal"     class="modal-sheet hidden" aria-modal="true">
+    <button class="modal-close" data-close-modal aria-label="关闭">×</button>
+    <div id="roleModalBody"></div>
+  </section>
+
+  <section id="infoModal"     class="modal-sheet hidden" aria-modal="true">
+    <button class="modal-close" data-close-modal aria-label="关闭">×</button>
+    <h2 class="modal-title">本局信息</h2>
+    <div id="infoModalBody"></div>
+  </section>
+
+  <section id="tagsModal"     class="modal-sheet hidden" aria-modal="true">
+    <button class="modal-close" data-close-modal aria-label="关闭">×</button>
+    <h2 class="modal-title">私人标记</h2>
+    <p class="modal-sub">仅自己可见，用于记录每位玩家的嫌疑假设。</p>
+    <div id="tagsModalBody"></div>
+  </section>
+
+  <section id="historyModal"  class="modal-sheet hidden" aria-modal="true">
+    <button class="modal-close" data-close-modal aria-label="关闭">×</button>
+    <h2 class="modal-title">公开历史</h2>
+    <div id="historyArea" class="history-area"></div>
+  </section>
+
+  <section id="teamModal"     class="modal-sheet hidden" aria-modal="true">
+    <button class="modal-close" data-close-modal aria-label="关闭">×</button>
+    <h2 class="modal-title">选择出征队伍</h2>
+    <p class="modal-sub">请选择本轮要出征的队员</p>
+    <div id="teamModalBody"></div>
+  </section>
+
+  <section id="assassinModal" class="modal-sheet hidden" aria-modal="true">
+    <button class="modal-close" data-close-modal aria-label="关闭">×</button>
+    <h2 class="modal-title">🗡️ 刺杀目标</h2>
+    <p class="modal-sub">选择你认为是梅林的玩家</p>
+    <div id="assassinModalBody"></div>
+  </section>
+
+  <script src="/static/main.js"></script>
+</body>
+</html>
